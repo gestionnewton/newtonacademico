@@ -1,0 +1,1665 @@
+/* style.css */
+/* style.css actualizado */
+:root {
+    --azul-oscuro: #1a237e;
+    --celeste: #0288d1;        /* Color para botones y resaltados (Faltaba definir) */
+    --celeste-artico: #CCEEFF; /* Color para el menú lateral */
+    --blanco: #ffffff;
+    --gris-claro: #f5f5f5;
+    --verde-exito: #2e7d32;    /* Ajustado para mejor contraste */
+}
+
+body {
+    margin: 0;
+    /* Cambiamos la fuente aquí */
+    font-family: 'Anek Latin', sans-serif; 
+    display: flex;
+    background-color: var(--gris-claro);
+    color: #333; /* Un gris muy oscuro para mejor lectura */
+}
+
+/* También asegúrate de que los botones y entradas de texto la usen */
+button, input, select, textarea {
+    font-family: 'Anek Latin', sans-serif;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 250px;
+    height: 100vh;
+    background-color: var(--azul-oscuro);
+    color: white;
+    position: fixed;
+    transition: all 0.3s;
+    z-index: 1000;
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    padding: 20px 15px;
+    gap: 2px;
+}
+
+.brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+}
+
+.brand-main {
+    font-weight: 500;
+    font-size: 1.2rem;
+    letter-spacing: 1px;
+    color: var(--blanco);
+}
+
+.brand-sub {
+    font-weight: 400;
+    font-size: 0.7rem;
+    letter-spacing: 3px;
+    color: var(--celeste-artico);
+}
+
+.logo {
+    width: 50px;        /* Tamaño del logo */
+    margin-right: 5px;
+}
+
+.nav-links {
+    list-style: none; /* Esto elimina los puntos/viñetas */
+    padding: 0;
+    margin: 0;
+}
+
+/* Alinear íconos con el texto en el menú */
+.nav-links li a {
+    display: flex;
+    align-items: center;
+    gap: 15px; /* Espacio entre ícono y texto */
+    color: white;
+    text-decoration: none;
+    padding: 15px 25px;
+    font-weight: 300;
+    transition: 0.3s;
+    color: var(--celeste-artico);
+}
+
+/* Tamaño de los íconos */
+.material-symbols-outlined {
+    font-size: 22px;
+    vertical-align: middle;
+    color: var(--celeste-artico);
+}
+
+/* Efecto visual al pasar el mouse */
+.nav-links li a:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 0 25px 25px 0; /* Curva elegante en el hover */
+    color: var(--blanco);
+}
+
+/* Contenido */
+.content {
+    margin-left: 250px;
+    width: 100%;
+    padding: 20px;
+}
+
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.btn-primary {
+    background-color: var(--celeste);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.3s ease; /* Para que el cambio de color sea suave */
+}
+
+.btn-primary:hover {
+    background-color: #0277bd; /* Un celeste un poco más oscuro al pasar el mouse */
+}
+
+/* Asegura que el formulario sea responsivo */
+#form-registro-manual input, 
+#form-registro-manual select {
+    box-sizing: border-box; /* Evita que el input se salga del card */
+}
+
+.btn-primary span {
+    margin-right: 8px; /* Espacio entre el ícono y el texto del botón */
+}
+
+
+/*=============================================*/
+.tabs-config {
+    display: flex;
+    gap: 10px;
+    border-bottom: 2px solid #ddd;
+}
+
+.tab-btn {
+    padding: 10px 20px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-family: 'Anek Latin', sans-serif;
+    font-weight: 600;
+    color: var(--azul-oscuro);
+}
+
+.tab-btn.active {
+    border-bottom: 3px solid var(--celeste);
+    color: var(--celeste);
+}
+
+.input-style {
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-family: 'Anek Latin';
+}
+
+.btn-success {
+    background-color: var(--verde-exito);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    transition: background-color 0.3s ease;
+}
+
+.btn-success:hover {
+    background-color: #1b5e20;
+}
+
+
+/* Tarjetas del Dashboard */
+.grid-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.shadow {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    border: 1px solid #eee;
+    transition: transform 0.2s;
+}
+
+.card-link:hover {
+    transform: translateY(-5px);
+    cursor: pointer;
+    border-color: var(--celeste);
+}
+
+.badge {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+
+.bg-success { background-color: #d4edda; color: #155724; }
+.bg-danger { background-color: #f8d7da; color: #721c24; }
+
+.icon-lg {
+    font-size: 40px;
+    margin-bottom: 10px;
+    display: block;
+}
+
+/* style.css - Diseño del Dashboard */
+#dashboard-content .grid-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+
+/*Estilos para el botón pequeño Activar periodo*/
+.btn-primary-sm {
+    background-color: var(--celeste);
+    color: white;
+    border: none;
+    padding: 5px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.btn-secondary {
+    background-color: #ddd;
+    color: #777;
+    border: none;
+    padding: 5px 12px;
+    border-radius: 5px;
+    cursor: default;
+}
+
+.badge-info {
+    background: #e1f5fe;
+    color: #01579b;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    margin-bottom: 2px;
+    display: inline-block;
+    margin-right: 4px;
+}
+
+/*================================================*/
+.sub-tab-btn {
+    padding: 8px 15px;
+    border: none;
+    background: #f0f0f0;
+    cursor: pointer;
+    border-radius: 5px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+.sub-tab-btn.active {
+    background: var(--azul-oscuro);
+    color: white;
+}
+.check-grid {
+    display: grid; 
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); 
+    gap: 10px; 
+    background: #f9f9f9; 
+    padding: 15px; 
+    border-radius: 8px; 
+    border: 1px solid #ddd; 
+    max-height: 250px; 
+    overflow-y: auto;
+}
+.acordeon-item { border: 1px solid #eee; border-radius: 5px; margin-bottom: 5px; }
+.acordeon-header { padding: 10px; background: #fafafa; cursor: pointer; display: flex; justify-content: space-between; }
+.acordeon-body { padding: 10px; border-top: 1px solid #eee; display: none; }
+
+
+
+
+.curso-item { border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; overflow: hidden; }
+.curso-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: #f8f9fa; cursor: pointer; }
+.curso-header:hover { background: #f1f1f1; }
+.competencias-detalle { padding: 15px; background: white; border-top: 1px solid #eee; display: none; }
+.comp-list-item { font-size: 0.9rem; padding: 5px 0; border-bottom: 1px solid #fafafa; display: flex; align-items: center; gap: 10px; }
+
+
+/*==================================================================*/
+.nav-links a.active {
+    background: rgba(255, 255, 255, 0.1);
+    border-left: 4px solid #b8d7ff;
+    color: #fff;
+    font-weight: 500;
+}
+
+
+
+/*===============REPORTES DE ASISTENCIA (CORREGIDO)=========================*/
+
+/* --- TABLA DE REPORTE (Ajustes de Alineación y Ancho) --- */
+
+.reporte-matrix {
+    border-collapse: separate; 
+    border-spacing: 0;
+    table-layout: fixed;
+    width: max-content;
+}
+
+/* 1. Alturas exactas para sincronizar el scroll vertical */
+.reporte-matrix thead tr:nth-child(1) th {
+    height: 26px !important;
+    top: 0;
+    z-index: 80;
+}
+
+.reporte-matrix thead tr:nth-child(2) th {
+    height: 26px !important;
+    top: 26px; /* Se pega justo debajo de la primera fila */
+    z-index: 80;
+}
+
+/* 2. El Rincón del Estudiante (Esquina fija total) */
+.reporte-matrix thead th.sticky-col {
+    position: sticky !important;
+    left: 0 !important;
+    top: 0 !important;
+    height: 52px !important; /* 26px + 26px */
+    z-index: 100 !important;
+    background-color: #f1f5f9 !important;
+    border-bottom: 2px solid #cbd5e1 !important;
+    border-right: 2px solid #cbd5e1 !important;
+    vertical-align: middle !important;
+    text-align: center;
+    padding: 0 10px !important;
+}
+
+/* 3. Filas de Estudiantes (Separación y Líneas) */
+.reporte-matrix tbody td {
+    border-bottom: 1px solid #e2e8f0 !important; /* Línea de la fila */
+    padding: 8px 10px !important; /* Más separación vertical */
+}
+
+.reporte-matrix .name-cell {
+    position: sticky !important;
+    left: 0;
+    z-index: 50;
+    background-color: #ffffff !important;
+    width: 260px !important;
+    min-width: 260px !important;
+    max-width: 260px !important;
+    font-size: 0.9rem !important;
+    font-weight: 600;
+    color: #334155;
+    border-right: 2px solid #cbd5e1 !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 4. Columnas de Fechas (Ancho reducido) */
+.reporte-matrix .header-day-letter,
+.reporte-matrix .header-day-number,
+.reporte-matrix .matrix-cell {
+    width: 28px !important; /* Ancho más estrecho */
+    min-width: 28px !important;
+    max-width: 28px !important;
+    padding: 0 !important;
+    text-align: center;
+    font-size: 0.75rem;
+    border-right: 1px solid #f1f5f9 !important;
+}
+
+/* Estilos de las celdas de datos */
+.matrix-cell {
+    text-align: center;
+    padding: 4px !important;
+    font-size: 0.85rem;
+    border-bottom: 1px solid #f1f5f9;
+    border-right: 1px solid #f1f5f9;
+    width: 35px; /* Ancho de columnas de fecha */
+}
+
+
+
+
+
+
+
+
+
+
+
+
+/* --- AJUSTES ESPECÍFICOS PARA IMPRESIÓN (PDF) --- */
+@media print {
+    .reporte-matrix {
+        width: 100% !important; /* En papel, que ocupe todo el ancho A4 */
+        table-layout: fixed !important;
+    }
+
+    .reporte-matrix .sticky-col {
+        position: relative !important; /* En papel no hay scroll, se quita el sticky */
+        left: auto !important;
+        border-right: 1px solid #000 !important;
+        /* Mantiene el ancho de 180px y el recorte de texto */
+    }
+
+    /* Ajuste para que las fechas quepan en el resto de la hoja */
+    .matrix-cell, .header-day-letter, .header-day-number {
+        width: auto !important; 
+    }
+}
+
+.reporte-matrix th {
+    font-size: 0.7rem;
+    padding: 8px 4px;
+    background: #f8f9fa;
+    min-width: 40px;
+}
+
+.reporte-matrix td {
+    padding: 6px;
+    font-size: 0.85rem;
+}
+
+/* Efecto de cebra para las filas */
+.reporte-matrix tr:nth-child(even) td[style*="position: sticky"] {
+    background: #fdfdfd !important;
+}
+
+
+/*=============================*/
+/* Contenedores Principales */
+.filter-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    color: var(--azul-oscuro);
+}
+
+.filter-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.filter-group {
+    flex: 1;
+}
+
+.group-label {
+    display: block;
+    font-weight: bold;
+    color: #888;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+}
+
+/* Grilla de Inputs */
+.filter-grid-sub {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px;
+}
+
+/* Inputs y Labels */
+.input-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.input-wrapper label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #444;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.input-wrapper label .material-symbols-outlined {
+    font-size: 18px;
+    color: var(--azul-primario);
+}
+
+/* Botón adaptable */
+.btn-container {
+    justify-content: flex-end;
+}
+
+.btn-block {
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+}
+
+/* Divisores */
+.filter-divider {
+    height: 1px;
+    background: #eee;
+    width: 100%;
+}
+
+/* Estados vacíos */
+.empty-state {
+    padding: 60px 20px;
+    text-align: center;
+    color: #aaa;
+}
+
+/* RESPONSIVIDAD */
+@media (min-width: 1024px) {
+    .filter-container {
+        flex-direction: row;
+        align-items: flex-end;
+    }
+    
+    .filter-divider {
+        width: 1px;
+        height: 60px;
+    }
+
+    .filter-grid-sub {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .filter-grid-sub {
+        grid-template-columns: 1fr; /* Un solo input por fila en móviles */
+    }
+    
+    .btn-container {
+        margin-top: 10px;
+    }
+}
+
+/* Estilo para la matriz scrollable */
+/* 1. El contenedor debe tener una altura máxima si quieres que el scroll sea interno, 
+   o simplemente que se pegue al tope de la pantalla */
+.matrix-scroll {
+    overflow-x: auto;
+    max-height: 70vh;
+    position: relative;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+
+
+/* 3. Encabezados de FECHAS (Sticky vertical) */
+.reporte-matrix thead th:not(.sticky-col) {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 80 !important; /* Menor que la esquina (100) pero mayor que los nombres (50) */
+    background-color: #f1f5f9 !important;
+}
+
+
+
+
+
+
+
+/* 5. Segunda fila de la cabecera (los números) */
+.reporte-matrix thead tr:nth-child(2) th {
+    position: sticky !important;
+    top: 26px !important; /* Ajustar según altura de la fila 1 */
+    z-index: 80 !important;
+}
+
+
+/* NIVEL 60: LA COLUMNA DE NOMBRES (Cuerpo de la tabla) */
+/* Se queda a la izquierda, pero pasa POR DEBAJO de las fechas al subir */
+.reporte-matrix tbody td.sticky-col {
+    position: sticky !important;
+    left: 0;
+    z-index: 50 !important; /* Menor que el encabezado (100) */ 
+    background-color: white !important;
+    
+    /* Aumento de fuente solicitado */
+    font-size: 1rem !important; 
+    font-weight: 600;
+    color: rgb(41, 41, 41);
+    
+    /* Mantenemos el recorte profesional */
+    width: 260px !important; /* Aumenté un poco el ancho para la fuente más grande */
+    min-width: 260px !important;
+    max-width: 260px !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 6. Sombra sutil para la columna fija al deslizar */
+.sticky-col::after {
+    content: '';
+    position: absolute;
+    right: -5px;
+    top: 0;
+    bottom: 0;
+    width: 5px;
+    background: linear-gradient(to right, rgba(0,0,0,0.05), transparent);
+    pointer-events: none;
+}
+
+
+
+
+
+
+/* 2. Pegar la fila superior (Letras de los días) */
+.reporte-matrix thead tr:first-child th {
+    position: sticky;
+    top: 0;
+    z-index: 15; /* Por encima de las celdas del cuerpo */
+}
+
+
+
+/* 4. EL RINCÓN CRÍTICO: La celda "Estudiante" (Sticky en X e Y) */
+/* Esta celda debe quedarse quieta tanto al bajar como al ir a la derecha */
+.reporte-matrix th.sticky-col {
+    position: sticky;
+    left: 0;
+    top: 0;
+    z-index: 30; /* La capa más alta de todas */
+    background-color: #f8f9fa !important;
+}
+
+/* 5. Sombra sutil para indicar que hay contenido debajo al scrollear */
+.reporte-matrix thead th {
+    box-shadow: 0 2px 2px -1px rgba(0,0,0,0.1);
+}
+
+
+
+
+/* Cabecera del Mes */
+.report-month-header {
+    background: var(--azul-oscuro);
+    color: white;
+    text-align: center;
+    padding: 10px;
+    font-weight: bold;
+    font-size: 1.1rem;
+    letter-spacing: 2px;
+    border-radius: 8px 8px 0 0;
+}
+
+/* Ajustes de Cabecera de Tabla */
+.header-day-letter {
+    width: 24px !important; 
+    min-width: 24px !important; 
+    max-width: 24px !important;
+    padding: 4px 0 !important;
+    font-size: 0.75rem !important; /* Fuente ligeramente más pequeña para las fechas */
+    text-align: center;
+    background: #f1f5f9 !important;
+    color: #64748b;
+    border-bottom: none !important;
+}
+
+.header-day-number {
+    width: 24px !important; 
+    min-width: 24px !important; 
+    max-width: 24px !important;
+    padding: 4px 0 !important;
+    font-size: 0.75rem !important; /* Fuente ligeramente más pequeña para las fechas */
+    text-align: center;
+    background: #f1f5f9 !important;
+    padding-top: 0 !important;
+}
+
+.sticky-col {
+    position: sticky;
+    left: 0;
+    background: white !important;
+    z-index: 10;
+    border-right: 2px solid #e2e8f0 !important;
+    min-width: 200px;
+    text-transform: uppercase;
+}
+
+/* Colores de las celdas */
+.matrix-cell {
+    width: 24px !important; 
+    min-width: 24px !important; 
+    max-width: 24px !important;
+    padding: 4px 0 !important;
+    font-size: 0.75rem !important; /* Fuente ligeramente más pequeña para las fechas */
+    text-align: center;
+    font-weight: bold;
+    border: 1px solid #f1f5f9;
+    
+    
+    z-index: 1;
+}
+
+/* Colores de estados */
+.cell-presente { background: #22c55e !important; color: white; }
+.cell-tardanza { background: #f59e0b !important; color: white; }
+.cell-falta { background: #ef4444 !important; color: white; }
+.cell-justificado { background: #3b82f6 !important; color: white; }
+
+
+/*=======================*/
+/* --- NUEVAS COLUMNAS DE RESUMEN --- */
+.header-summary {
+    background-color: #f8fafc !important;
+    border-left: 2px solid #cbd5e1 !important; /* Separación visual de la matriz */
+    width: 35px !important;
+    font-weight: bold;
+    color: #475569;
+    font-size: 0.8rem;
+    vertical-align: middle !important;
+}
+
+.summary-cell {
+    font-weight: bold;
+    text-align: center;
+    font-size: 0.85rem;
+    border-left: 1px solid #e2e8f0;
+}
+
+/* Colores por tipo de resumen */
+.col-p { color: #16a34a; background-color: #f0fdf4 !important; } /* Verde para Presentes */
+.col-t { color: #d97706; background-color: #fffbeb !important; } /* Naranja para Tardanzas */
+.col-f { color: #dc2626; background-color: #fef2f2 !important; } /* Rojo para Faltas */
+
+/* --- FILA DE TOTALES (ESTILO WEBAPP PREMIUM) --- */
+.total-row td {
+    background: #c3daff !important; /* Azul pizarra muy oscuro */
+    color: #f8fafc !important;
+    font-weight: 700 !important;
+    padding: 12px 5px !important;
+    border-top: 2px solid #0f172a !important;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+}
+
+/* --- FIX DEFINITIVO: TOTAL GENERAL (Fondo oscuro, Letras blancas) --- */
+
+/* Usamos una ruta completa para que gane a cualquier otra regla anterior */
+.reporte-matrix tbody tr.total-row td.sticky-col.name-cell,
+.reporte-matrix tbody tr.total-row td.name-cell {
+    background-color: #1e293b !important; /* Azul Pizarra Oscuro */
+    color: #ffffff !important;           /* Blanco Puro */
+    font-weight: 800 !important;
+    border-right: 2px solid #334155 !important;
+    border-bottom: none !important;      /* Limpieza visual al final */
+}
+
+/* Corregimos los números de los totales diarios (Celeste sobre oscuro) */
+.total-row td.matrix-cell {
+    background-color: #1e293b !important;
+    color: #38bdf8 !important; /* Celeste brillante */
+    font-weight: 700 !important;
+}
+
+/* Totales acumulados de P, T y F (Mantener consistencia) */
+.total-row .summary-total {
+    border-left: 1px solid #334155 !important;
+    font-size: 0.9rem !important;
+    vertical-align: middle !important;
+}
+
+.total-row td.name-cell {
+    text-align: right !important;
+    padding-right: 15px !important;
+}
+
+
+
+.total-row .tot-p { color: #4ade80 !important; background: #064e3b !important; } /* Verde esmeralda */
+.total-row .tot-t { color: #fbbf24 !important; background: #78350f !important; } /* Ámbar */
+.total-row .tot-f { color: #f87171 !important; background: #7f1d1d !important; } /* Rojo coral */
+
+/* Sombra superior para dar profundidad al footer */
+.total-row {
+    box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+
+
+
+
+.name-cell {
+    font-size: 0.8rem;
+    padding-left: 10px !important;
+}
+
+
+
+
+/*==========================================*/
+/* Estilo para columnas de Feriados */
+.col-feriado {
+    background-color: #e2e8f0 !important; /* Gris azulado */
+    color: #475569 !important;
+}
+
+.cell-feriado {
+    background-color: #f1f5f9 !important;
+    color: #94a3b8 !important;
+    font-size: 0.65rem !important;
+    font-weight: normal !important;
+}
+
+/* Tooltip básico para ver el nombre del feriado al pasar el mouse */
+.header-day-letter[title] {
+    cursor: help;
+}
+
+
+
+
+/*===================================================*/
+/* --- TABS MINIMALISTAS --- */
+.tabs-config {
+    display: flex;
+    gap: 20px;
+    border-bottom: 2px solid #e2e8f0;
+    margin-bottom: 25px;
+    padding-left: 5px;
+}
+
+.tab-btn, .tab-btn-asis {
+    background: none;
+    border: none;
+    padding: 12px 16px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tab-btn:hover, .tab-btn-asis:hover {
+    color: #007bff;
+    background-color: #f8fafc;
+}
+
+.tab-btn.active, .tab-btn-asis.active {
+    color: #007bff;
+}
+
+/* Animación de la línea inferior */
+.tab-btn.active::after, .tab-btn-asis.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: #007bff;
+    border-radius: 5px;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+}
+
+/* --- BUSCADOR DE ESTUDIANTES JUSTIFICACIONES--- */
+.search-wrapper {
+    position: relative;
+    width: 100%;
+    /* Asegura que el padding no sume al ancho total */
+    box-sizing: border-box; 
+}
+
+#just-search-input {
+    width: 100%;
+    box-sizing: border-box; /* Fundamental para que no se salga */
+    padding-right: 35px;    /* Espacio para la X */
+    height: 42px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#just-search-input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+/* BOTÓN DE LIMPIAR (X) */
+.btn-clear-search {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #f1f5f9; /* Un fondo sutil para que se vea */
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: none; /* Se controla por JS */
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #64748b;
+    z-index: 5; /* Asegura que esté por encima */
+    transition: all 0.2s;
+}
+
+.btn-clear-search:hover {
+    background: #e2e8f0;
+    color: #ef4444;
+}
+
+.btn-clear-search .material-symbols-outlined {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+/* RESULTADOS */
+.search-results {
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+    z-index: 1000; /* Prioridad máxima */
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+}
+
+
+
+.search-item {
+    padding: 10px 15px;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-size: 0.9rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.search-item:hover {
+    background: #f0f7ff;
+    color: #007bff;
+}
+
+/* Input con espacio para el icono de borrar */
+
+
+/* Botón de Limpiar */
+
+
+
+
+
+
+
+
+
+
+/* Estilo base del botón de navegación naranja */
+.btn-nav-orange {
+    background-color: #ff9800; /* Naranja principal */
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease; /* Suaviza todos los cambios */
+    /*box-shadow: 0 4px 0 #e65100; /* Sombra sólida inferior que da efecto de altura */
+    outline: none;
+}
+
+/* Efecto al pasar el mouse (un poco más claro) */
+.btn-nav-orange:hover {
+    background-color: #fb8c00;
+}
+
+/* EFECTO DE HUNDIDO AL PRESIONAR */
+.btn-nav-orange:active {
+    box-shadow: 0 0 0 #e65100; /* Desaparece la sombra inferior */
+    transform: translateY(4px); /* El botón se desplaza hacia abajo 4px */
+}
+
+/* Iconos dentro del botón */
+.btn-nav-orange .material-symbols-outlined {
+    font-size: 20px;
+}
+
+#col-fecha {
+    transition: all 0.3s ease;
+    opacity: 1 !important; /* Forzamos a que siempre sea visible */
+}
+
+/* Evitamos que el input de fecha se vea grisáceo */
+#rep-fecha-busqueda {
+    background-color: white !important;
+    color: #333 !important;
+    cursor: pointer;
+}
+
+
+
+/*=======================================================================*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* --- ESTILOS BASE (Escritorio) --- */
+.sidebar {
+    width: 250px;
+    height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
+    transition: all 0.3s ease; /* Transición suave para el movimiento */
+    z-index: 2000;
+}
+
+.content {
+    margin-left: 250px; /* El contenido deja espacio al menú */
+    transition: all 0.3s ease;
+    padding: 20px;
+}
+
+/* --- CLASE PARA ESCONDER (Escritorio) --- */
+.sidebar.collapsed {
+    margin-left: -250px; /* Se esconde a la izquierda */
+}
+
+.content.expanded {
+    margin-left: 0; /* El contenido se expande a toda la pantalla */
+}
+
+/* --- COMPORTAMIENTO MÓVIL (768px o menos) --- */
+@media (max-width: 768px) {
+    #sidebar {
+        left: -250px; /* Escondido por defecto en móvil */
+        width: 250px !important; /* Mantiene su ancho al abrirse */
+    }
+
+    .content {
+        margin-left: 0 !important; /* Contenido siempre a pantalla completa */
+    }
+
+    /* ESTA CLAVE ES LA QUE ACTIVA EL BOTÓN */
+    #sidebar.open {
+        left: 0 !important; /* Entra desde la izquierda */
+        box-shadow: 5px 0 15px rgba(0,0,0,0.3);
+    }
+}
+
+
+
+/*=============================================*/
+/* --- COLORES DE RESALTADO PARA CALIFICATIVOS --- */
+.nota-ad {
+    background-color: #e0f2fe !important; /* Celeste suave */
+    color: #0369a1 !important;
+    border-color: #bae6fd !important;
+}
+
+.nota-a {
+    background-color: #dcfce7 !important; /* Verde suave */
+    color: #15803d !important;
+    border-color: #bbf7d0 !important;
+}
+
+.nota-b {
+    background-color: #ffedd5 !important; /* Naranja suave */
+    color: #b47009 !important;
+    border-color: #fef1aa !important;
+}
+
+.nota-c {
+    background-color: #fee2e2 !important; /* Rojo suave */
+    color: #b91c1c !important;
+    border-color: #fecaca !important;
+}
+
+
+/*==========================================*/
+/* --- MATRIZ DE PERMISOS CORPORATIVA --- */
+.perm-modulo-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #ffffff;
+    overflow: hidden;
+}
+
+.perm-modulo-header {
+    background: #f8fafc;
+    padding: 10px 15px;
+    font-weight: bold;
+    font-size: 0.9rem;
+    color: #1e293b;
+    border-bottom: 1px solid #e2e8f0;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.perm-modulo-body {
+    padding: 12px 15px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+}
+
+.perm-item-checkbox {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: #fafafa;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #f1f5f9;
+    transition: background 0.2s;
+    cursor: pointer;
+}
+
+.perm-item-checkbox:hover {
+    background: #f0f7ff;
+}
+
+.perm-item-checkbox input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    margin-top: 2px;
+    cursor: pointer;
+}
+
+.perm-info-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.perm-info-text strong {
+    font-size: 0.85rem;
+    color: #334155;
+}
+
+.perm-info-text span {
+    font-size: 0.75rem;
+    color: #64748b;
+    line-height: 1.3;
+    margin-top: 2px;
+}
+
+
+/*===========================================*/
+/* ================================================================= */
+/* SYSTEM CUSTOM ALERTS (POP-UPS MINIMALISTAS) ALERTAS               */
+/* ================================================================= */
+.custom-alert-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(15, 23, 42, 0.25); /* Fondo oscuro muy sutil */
+    backdrop-filter: blur(5px); /* Efecto de desenfoque profesional */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 20000; /* Por encima de cualquier modal o menú */
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+/* Estado activo para la animación de entrada */
+.custom-alert-overlay.alert-visible {
+    opacity: 1;
+}
+
+.custom-alert-box {
+    background: #ffffff;
+    padding: 28px 24px;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 360px;
+    text-align: center;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.03);
+    transform: scale(0.8);
+    /* Efecto elástico de Zoom */
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); 
+}
+
+.custom-alert-overlay.alert-visible .custom-alert-box {
+    transform: scale(1);
+}
+
+/* Iconos de Material Symbols */
+.custom-alert-icon {
+    font-size: 52px !important;
+    margin-bottom: 14px;
+    display: inline-block;
+    user-select: none;
+}
+
+/* Variaciones Cromáticas Semánticas */
+.alert-success .custom-alert-icon { color: #22c55e; } /* Verde suave */
+.alert-error .custom-alert-icon { color: #ef4444; }   /* Rojo suave */
+.alert-warning .custom-alert-icon { color: #f59e0b; } /* Ámbar suave */
+.alert-info .custom-alert-icon { color: #3b82f6; }    /* Azul corporativo */
+
+.custom-alert-msg {
+    color: #334155;
+    font-size: 0.95rem;
+    font-weight: 500;
+    line-height: 1.5;
+    margin: 0 0 22px 0;
+    font-family: 'Anek Latin', sans-serif;
+}
+
+/* Botón de Confirmación */
+.custom-alert-btn {
+    background-color: #334155;
+    color: #ffffff;
+    border: none;
+    padding: 10px 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+    width: 100%;
+    max-width: 140px;
+    font-family: 'Anek Latin', sans-serif;
+    outline: none;
+}
+
+.custom-alert-btn:hover {
+    background-color: #1e293b;
+}
+
+.custom-alert-btn:active {
+    transform: scale(0.97);
+}
+
+
+
+
+/*===========================================================*/
+/* ================================================================= */
+/* DOCENTE DASHBOARD - PREMIUM MINIMALIST GRAPHICS                  */
+/* ================================================================= */
+.grid-cards-docente {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    padding: 10px 0;
+}
+
+.card-grado-docente {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.01);
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.card-grado-docente:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 16px -4px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+}
+
+.card-header-main {
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: linear-gradient(to right, #f8fafc, #ffffff);
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.card-header-main .header-icon {
+    font-size: 36px;
+    color: #007bff;
+    background: #eff6ff;
+    padding: 10px;
+    border-radius: 10px;
+}
+
+.card-header-info h3 {
+    margin: 0;
+    font-size: 1.15rem;
+    color: #1e293b;
+    font-weight: 700;
+}
+
+.card-header-info p {
+    margin: 2px 0 0 0;
+    font-size: 0.85rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+/* Botón Desplegable */
+.btn-card-toggle {
+    width: 100%;
+    padding: 14px 20px;
+    background: #ffffff;
+    border: none;
+    border-top: 1px solid #f1f5f9;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.15s;
+    font-family: 'Anek Latin', sans-serif;
+}
+
+.btn-card-toggle:hover {
+    background: #f8fafc;
+    color: #007bff;
+}
+
+.btn-card-toggle .toggle-icon {
+    transition: transform 0.2s ease;
+}
+
+.btn-card-toggle.active .toggle-icon {
+    transform: rotate(180deg);
+}
+
+/* Panel Desplegable */
+.card-accordion-content {
+    background: #f8fafc;
+    border-top: 1px solid #f1f5f9;
+    max-height: 260px;
+    overflow-y: auto;
+}
+
+.lista-asignaciones-card {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.lista-asignaciones-card li {
+    padding: 14px 20px;
+    border-bottom: 1px solid #edf2f7;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.lista-asignaciones-card li:last-child {
+    border-bottom: none;
+}
+
+.lista-asignaciones-card li:hover {
+    background: #f1f5f9;
+}
+
+.asig-item-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.asig-item-left .item-icon {
+    font-size: 20px;
+    color: #64748b;
+}
+
+.asig-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #334155;
+}
+
+.badge-seccion {
+    background: #e2e8f0;
+    color: #475569;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 6px;
+    text-transform: uppercase;
+}
+
+/* MODAL DE RENDIMIENTO DE CALIFICACIONES */
+.modal-view-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.3);
+    backdrop-filter: blur(8px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 25000;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.modal-view-overlay.modal-open { opacity: 1; }
+
+.modal-view-box {
+    background: #ffffff;
+    width: 92%;
+    max-width: 850px;
+    max-height: 85vh;
+    border-radius: 16px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+    display: flex;
+    flex-direction: column;
+    transform: scale(0.95);
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal-view-overlay.modal-open .modal-view-box { transform: scale(1); }
+
+.modal-view-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-view-title h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: #1e293b;
+    font-weight: 700;
+}
+
+.modal-view-title p {
+    margin: 4px 0 0 0;
+    font-size: 0.85rem;
+    color: #0284c7;
+    font-weight: 600;
+}
+
+.btn-modal-view-close {
+    background: #f1f5f9;
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #64748b;
+    transition: background 0.15s, color 0.15s;
+}
+
+.btn-modal-view-close:hover {
+    background: #e2e8f0;
+    color: #1e293b;
+}
+
+.modal-view-body {
+    padding: 24px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* Insignias de calificaciones dentro de la matriz */
+.badge-nota-view {
+    display: inline-block;
+    width: 32px;
+    height: 26px;
+    line-height: 26px;
+    text-align: center;
+    font-weight: 800;
+    font-size: 0.8rem;
+    border-radius: 6px;
+    margin: 2px;
+    user-select: none;
+}
+.badge-nota-view.nota-ad { background-color: #dcfce7; color: #166534; }
+.badge-nota-view.nota-a  { background-color: #dbeafe; color: #1e40af; }
+.badge-nota-view.nota-b  { background-color: #fef3c7; color: #92400e; }
+.badge-nota-view.nota-c  { background-color: #fee2e2; color: #991b1b; }
+
+.sin-nota {
+    color: #cbd5e1;
+    font-weight: bold;
+}
+
+
+/*=========================================================*/
+/* ================================================================= */
+/* AUTOCOMPLETE SUGGESTIONS (MÓDULO MI PROGRESO)                     */
+/* ================================================================= */
+.search-result-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    transition: background-color 0.15s ease;
+    box-sizing: border-box;
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+.search-result-item:hover {
+    background-color: #f0f7ff; /* Sutil azul de enfoque */
+}
+
+.search-result-item .student-name {
+    font-weight: 700;
+    color: #1e293b;
+    font-size: 0.9rem;
+}
+
+.search-result-item .student-meta {
+    font-size: 0.78rem;
+    color: #64748b;
+    font-weight: 600;
+    display: flex;
+    gap: 12px;
+}
+
+.search-result-item .student-meta span {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+/*=========================================================================================*/
+/* ================================================================= */
+/* SUB-TABS INTERFACE (MI PROGRESO)                                  */
+/* ================================================================= */
+.sub-tab-btn {
+    background: transparent;
+    border: none;
+    padding: 10px 16px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 3px solid transparent;
+    transition: all 0.15s ease;
+    font-family: 'Anek Latin', sans-serif;
+}
+
+.sub-tab-btn:hover {
+    color: #0f172a;
+}
+
+.sub-tab-btn.active {
+    color: #0284c7;
+    border-bottom-color: #0284c7;
+}
+
+/* Items de reglas en el configurador */
+.fusion-rule-item {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+}
+.rule-info-left h5 { margin:0; font-size:0.9rem; color:#1e293b; font-weight:700; }
+.rule-info-left p { margin:2px 0 0 0; font-size:0.75rem; color:#64748b; font-weight:500; }
+
+/*==============================================================================================*/
+/* Pestañas de jerarquía de módulo */
+.sub-tab-btn.active {
+    background-color: #ffffff !important;
+    color: #0284c7 !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+}
+
+/* ================================================================= */
+/* CONFIGURACIÓN DE IMPRESIÓN PROFESIONAL DE BOLETAS (MINEDU REG)   */
+/* ================================================================= */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    #print-window-informe-contenedor, #print-window-informe-contenedor * {
+        visibility: visible;
+    }
+    #print-window-informe-contenedor {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+    .page-break-student {
+        page-break-after: always;
+        break-after: page;
+    }
+}
