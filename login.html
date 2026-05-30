@@ -4,25 +4,160 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Newton Académico</title>
-    <link rel="icon" type="image/png" href="https://i.postimg.cc/vZyCwnjS/icono-newton-academico-1.png">
+    <link rel="icon" type="image/png" href="https://i.postimg.cc/252sw50y/favicon-newton-academico.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Anek+Latin:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        /* Estilos base para centrado absoluto y fondo minimalista */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Anek Latin', sans-serif;
+            background-color: #f8fafc; /* Gris ultra claro limpio */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+            box-sizing: border-box;
+        }
+
+        /* Tarjeta de login estilizada */
+        .login-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 40px 30px;
+            width: 100%;
+            max-width: 380px;
+            text-align: center;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+            box-sizing: border-box;
+        }
+
+        /* Contenedor del Logo */
+        .login-logo {
+            width: 85px;
+            height: auto;
+            margin-bottom: 12px;
+            user-select: none;
+        }
+
+        /* Nombre de la Web App con degradado azul institucional */
+        .app-brand-title {
+            margin: 0 0 6px 0;
+            font-size: 1.45rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            background: linear-gradient(135deg, #122d80 0%, #4884c9 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Subtítulo de acción */
+        .app-login-subtitle {
+            margin: 0 0 28px 0;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #64748b; /* Slate sutil */
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        /* Formulario y estructura interna */
+        #login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Inputs minimalistas homologados */
+        .login-input {
+            width: 100%;
+            height: 44px;
+            padding: 0 14px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1e293b;
+            background-color: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+        }
+
+        .login-input:focus {
+            outline: none;
+            border-color: #29438F;
+            box-shadow: 0 0 0 3px rgba(41, 67, 143, 0.12);
+        }
+
+        .login-input::placeholder {
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        /* Botón de acceso premium */
+        .login-btn {
+            width: 100%;
+            height: 44px;
+            background-color: #073383;
+            color: #ffffff;
+            border: 1px solid #29438F;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-btn:hover {
+            background-color: #26469c;
+            border-color: #3660d4;
+            box-shadow: 0 4px 12px rgba(41, 67, 143, 0.2);
+        }
+
+        .login-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* Mensajes de error operativos */
+        #error-msg {
+            margin: 14px 0 0 0;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #ef4444;
+            min-height: 18px;
+        }
+    </style>
 </head>
-<body style="justify-content: center; align-items: center; height: 100vh;">
-    <div class="card" style="width: 100%; max-width: 400px; text-align: center;">
-        <img src="https://i.postimg.cc/W45SpCYb/insignia-azul-sello.png" style="width: 100px;">
-        <h2>Iniciar Sesión</h2>
+<body>
+
+    <div class="login-card">
+        <img src="https://i.postimg.cc/252sw50y/favicon-newton-academico.png" alt="Logo Newton" class="login-logo">
+        
+        <h1 class="app-brand-title">Newton Académico</h1>
+        <h2 class="app-login-subtitle">Iniciar Sesión</h2>
+        
         <form id="login-form">
-            <input type="text" id="dni" placeholder="DNI (Nombre de usuario)" required 
-                   style="width: 90%; padding: 10px; margin: 10px; border-radius: 8px; border: 1px solid #ccc;">
-            <input type="password" id="password" placeholder="Contraseña" required
-                   style="width: 90%; padding: 10px; margin: 10px; border-radius: 8px; border: 1px solid #ccc;">
-            <button type="submit" class="btn-primary" style="width: 95%;">Entrar</button>
+            <input type="text" id="dni" class="login-input" placeholder="DNI (Nombre de usuario)" required autocomplete="username">
+            <input type="password" id="password" class="login-input" placeholder="Contraseña" required autocomplete="current-password">
+            <button type="submit" class="login-btn">Entrar al Sistema</button>
         </form>
-        <p id="error-msg" style="color: red;"></p>
+        
+        <p id="error-msg"></p>
     </div>
 
     <script src="supabase-config.js"></script>
