@@ -3023,7 +3023,7 @@ async function eliminarFeriado(id) {
         }
 
         // =================================================================
-        // NUEVO: BLINDAJE ESPECÍFICO PARA EL ACCESO A "VER SECCIÓN"
+        // BLINDAJE ESPECÍFICO PARA EL ACCESO A "VER SECCIÓN"
         // =================================================================
         if (sectionId === 'ver-seccion' && !esAdministradorGlobal) {
             const tieneTutoriaAsignada = window.misSeccionesTutoria && window.misSeccionesTutoria.length > 0;
@@ -3031,6 +3031,24 @@ async function eliminarFeriado(id) {
                 alert("Acceso Restringido: Este módulo está disponible únicamente para Docentes con carga de Tutoría.");
                 return; // Bloqueo absoluto
             }
+        }
+
+        // =================================================================
+        // NUEVO: ACTUALIZACIÓN DINÁMICA DEL TÍTULO DE LA TOP-BAR
+        // =================================================================
+        const titulosModulos = {
+            'dashboard': 'Dashboard',
+            'marcar-asistencia': 'Marcar Asistencia',
+            'evaluacion': 'Evaluación',
+            'mi-asistencia': 'Mi Asistencia',
+            'ver-seccion': 'Ver Sección',
+            'mi-progreso': 'Mi Progreso',
+            'configuracion': 'Configuración'
+        };
+
+        const elTituloTopBar = document.getElementById('section-title');
+        if (elTituloTopBar && titulosModulos[sectionId]) {
+            elTituloTopBar.innerText = titulosModulos[sectionId];
         }
         // =================================================================
 
@@ -3053,8 +3071,6 @@ async function eliminarFeriado(id) {
         // Lógicas específicas de carga por sección
         if (sectionId === 'ver-seccion') { 
             inicializarFechaReporte(); 
-            // TIP DE DISEÑO: Aquí puedes invocar la función que carga tus selectores de secciones 
-            // y pasarle "window.misSeccionesTutoria" para que filtre automáticamente el combo.
         }
         if (sectionId === 'marcar-asistencia') { cargarAsistenciasRecientes(); }
         if (sectionId === 'evaluacion') { inicializarSeccionEvaluacion(); }
