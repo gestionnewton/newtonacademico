@@ -4909,8 +4909,8 @@ async function eliminarFeriado(id) {
                         .legend-title { color: #29438F; font-weight: 700; text-transform: uppercase; font-size: 0.68rem; }
                         
                         /* CORREGIDO: Clases independientes para aislar el Sello y colocarlo POR ENCIMA de la línea */
-                        .seal-floating-wrapper { position: absolute; bottom: 14mm; right: 10mm; display: flex; flex-direction: column; align-items: center; text-align: center; width: 140px; }
-                        .seal-img { width: 110px; height: auto; margin-bottom: -2px; mix-blend-mode: multiply; }
+                        .seal-floating-wrapper { position: absolute; bottom: 14mm; right: 10mm; display: flex; flex-direction: column; align-items: center; text-align: center; width: 170px; }
+                        .seal-img { width: 145px; height: auto; margin-bottom: -2px; mix-blend-mode: multiply; }
                         .seal-label { font-size: 0.68rem; color: #475569; font-weight: 700; border-top: 1px solid #cbd5e1; width: 100%; padding-top: 2px; text-transform: uppercase; letter-spacing: 0.3px; }
                         
                         .footer-pdf-bar { position: absolute; bottom: 6mm; left: 10mm; right: 10mm; border-top: 1px solid #e2e8f0; padding-top: 6px; display: flex; justify-content: space-between; font-size: 0.7rem; color: #94a3b8; font-weight: 600; }
