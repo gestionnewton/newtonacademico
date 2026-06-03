@@ -418,7 +418,6 @@
                             <p style="margin: 0 0 20px 0; font-size: 0.82rem; color: #64748b; font-weight: 500;">Configure la fusión analítica para libretas e informes oficiales bajo estándar CNEB</p>
                             
                             <div style="display: grid; grid-template-columns: 1fr; gap: 20px;">
-                                <!-- Formulario Inyectado de Creación -->
                                 <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 20px; box-sizing: border-box;">
                                     <h4 style="margin: 0 0 15px 0; font-size: 0.85rem; color: #0284c7; text-transform: uppercase; letter-spacing: 0.5px;">Nueva Regla de Fusión</h4>
                                     
@@ -436,7 +435,6 @@
                                                 </select>
                                             </div>
                                         </div>
-                                        <!-- CORREGIDO: Selector simple acompañado de panel de ordenamiento interactivo -->
                                         <div style="display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: flex-end;">
                                             <div style="display:flex; flex-direction:column; gap:4px; width: 100%;">
                                                 <label style="font-size:0.75rem; font-weight:700; color:#475569;">Seleccionar Curso para Añadir</label>
@@ -449,9 +447,7 @@
 
                                         <div style="display:flex; flex-direction:column; gap:6px; margin-top:6px; box-sizing:border-box;">
                                             <label style="font-size:0.75rem; font-weight:700; color:#475569;">Jerarquía y Orden de Cursos Seleccionados (Configure el orden aquí):</label>
-                                            <div id="cfg-cursos-seleccionados-orden" style="background:#f1f5f9; border:1px dashed #cbd5e1; border-radius:8px; padding:12px; min-height:60px; display:flex; flex-direction:column; gap:6px; box-sizing:border-box;">
-                                                <!-- Inyección de filas en tiempo real con controles de movimiento -->
-                                            </div>
+                                            <div id="cfg-cursos-seleccionados-orden" style="background:#f1f5f9; border:1px dashed #cbd5e1; border-radius:8px; padding:12px; min-height:60px; display:flex; flex-direction:column; gap:6px; box-sizing:border-box;"></div>
                                         </div>
                                         <button type="button" class="btn-primary" onclick="guardarReglaFusion()" style="background:#22c55e; border-color:#22c55e; height:40px; align-self:flex-end; padding:0 25px; border-radius:6px; font-weight:700;">
                                             <span class="material-symbols-outlined" style="font-size:18px;">add_box</span> Registrar Fusión Curricular
@@ -459,12 +455,21 @@
                                     </div>
                                 </div>
 
-                                <!-- Panel de Reglas Actuales -->
+                                <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 20px; box-sizing: border-box;">
+                                    <h4 style="margin: 0 0 4px 0; font-size: 0.85rem; color: #29438F; text-transform: uppercase; letter-spacing: 0.5px;">Orden de Aparición en el PDF del Informe</h4>
+                                    <p style="margin: 0 0 15px 0; font-size: 0.8rem; color: #64748b; font-weight: 500;">Establezca la prioridad secuencial vertical en la que se listarán las áreas y cursos libres en el folio A4</p>
+                                    
+                                    <div id="panel-orden-global-contenedor" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 15px;">
+                                        </div>
+                                    
+                                    <button type="button" class="btn-primary" onclick="guardarOrdenGlobalPDF()" style="background:#29438F; border-color:#29438F; height:40px; padding:0 25px; border-radius:6px; font-weight:700; align-self: flex-start;">
+                                        <span class="material-symbols-outlined" style="font-size:18px;">save</span> Guardar Orden de Impresión Oficial
+                                    </button>
+                                </div>
+
                                 <div>
                                     <h4 style="margin: 0 0 12px 0; font-size: 0.85rem; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Reglas Corporativas Activas</h4>
-                                    <div id="lista-reglas-fusion-contenedor" style="display: flex; flex-direction: column; gap: 10px;">
-                                        <!-- Inyección dinámica -->
-                                    </div>
+                                    <div id="lista-reglas-fusion-contenedor" style="display: flex; flex-direction: column; gap: 10px;"></div>
                                 </div>
                             </div>
                         </div>

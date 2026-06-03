@@ -4065,6 +4065,7 @@ async function eliminarFeriado(id) {
                 const { data: anioReg, error: errA } = await supabaseClient.from('anio_academico').select('*').eq('estado', 'ACTIVO').single();
                 if (errA) throw errA;
                 window.evalAnioActivo = anioReg;
+                await cargarFusionesDesdeSupabase();
             }
 
             const { data: padron, error: errP } = await supabaseClient
@@ -4393,18 +4394,24 @@ async function eliminarFeriado(id) {
     // ADICIÓN: EMISIÓN MASIVA DE INFORMES DE PROGRESO POR SECCIÓN (A4)
     // =================================================================
 
+    // Variable global para almacenar la cola ordenada de cursos antes de guardar la regla
+    window.tmpCursosIdsOrdenados = [];
+
+
     // =================================================================
-    // ENGINE GESTOR DE TRIPLE PESTAÑA PRINCIPAL (MI PROGRESO)
+    // ENGINE GESTOR DE TRIPLE PESTAÑA PRINCIPAL (PERSISTENCIA SUPABASE)
     // =================================================================
 
     window.padronEstudiantesProgreso = [];
     window.alumnoSeleccionadoActual = null;
-    window.rulesFusionesCursos = JSON.parse(localStorage.getItem('newton_cfg_fusiones')) || [];
+    window.rulesFusionesCursos = [];     // Ahora se poblará dinámicamente desde Supabase
+    window.catalogoCursosCache = [];     // Caché global para traducción veloz de nombres
+    window.idRuleFusionEditando = null;  // Almacena el ID del registro que se está editando
 
     /**
-     * CORREGIDO: Gobierna el intercambio de los 3 entornos principales de jerarquía superior
+     * Gobierna el intercambio de los 3 entornos principales de jerarquía superior
      */
-    function cambiarMainTabProgreso(tipoEntorno) {
+    async function cambiarMainTabProgreso(tipoEntorno) {
         document.getElementById('btn-main-tab-individual').classList.remove('active');
         document.getElementById('btn-main-tab-seccion').classList.remove('active');
         document.getElementById('btn-main-tab-config').classList.remove('active');
@@ -4422,43 +4429,44 @@ async function eliminarFeriado(id) {
         } else if (tipoEntorno === 'config') {
             document.getElementById('btn-main-tab-config').classList.add('active');
             document.getElementById('entorno-progreso-config').style.display = 'block';
-            // Invocar cargador global institucional en el tab
             inicializarTabConfigFusiones();
         }
     }
 
     /**
-     ==================================================
-     */
-    
-    // Variable global para almacenar la cola ordenada de cursos antes de guardar la regla
-    window.tmpCursosIdsOrdenados = [];
-
-    /**
-     * Carga el catálogo base e inicializa la cola de ordenamiento limpia
+     * Carga el catálogo base de Supabase e inicializa el entorno de configuración
      */
     async function inicializarTabConfigFusiones() {
         const selectCursos = document.getElementById('cfg-fusion-cursos-select');
         if (!selectCursos) return;
 
-        selectCursos.innerHTML = '<option value="">Sincronizando catálogo...</option>';
-        window.tmpCursosIdsOrdenados = [];
-        renderizerCursosTemporalesOrden();
-        renderizarListadoReglasConfig();
+        selectCursos.innerHTML = '<option value="">Sincronizando catálogo completo de cursos...</option>';
+        resetearFormularioFusion();
 
         try {
-            const { data: catalogoCursos, error } = await supabaseClient
+            if (!window.evalAnioActivo) {
+                const { data: anioReg, error: errA } = await supabaseClient.from('anio_academico').select('*').eq('estado', 'ACTIVO').single();
+                if (errA) throw errA;
+                window.evalAnioActivo = anioReg;
+            }
+
+            // 1. Descargar catálogo maestro de cursos para el año lectivo
+            const { data: catalogoCursos, error: errC } = await supabaseClient
                 .from('cursos')
                 .select('id_curso, nombre_curso')
                 .order('nombre_curso', { ascending: true });
 
-            if (error) throw error;
+            if (errC) throw errC;
+            window.catalogoCursosCache = catalogoCursos || [];
 
             let optionsHtml = '<option value="">Elija un curso de la lista...</option>';
-            catalogoCursos?.forEach(c => {
+            window.catalogoCursosCache.forEach(c => {
                 optionsHtml += `<option value="${c.id_curso}">${c.nombre_curso.toUpperCase()}</option>`;
             });
             selectCursos.innerHTML = optionsHtml;
+
+            // 2. Descargar de forma reactiva las reglas de la base de datos
+            await cargarFusionesDesdeSupabase();
 
         } catch (err) {
             console.error("Error al poblar catálogo global de fusiones:", err.message);
@@ -4466,6 +4474,199 @@ async function eliminarFeriado(id) {
         }
     }
 
+    /**
+     * Descarga las fusiones de Supabase y las mapea al formato de la app
+     */
+    async function cargarFusionesDesdeSupabase() {
+        try {
+            const { data, error } = await supabaseClient
+                .from('config_fusiones')
+                .select('*')
+                .eq('id_anio', window.evalAnioActivo.id_anio)
+                .order('id_fusion', { ascending: true });
+
+            if (error) throw error;
+
+            // Mapeo seguro al formato existente para mantener intactos los motores de PDF e individual
+            window.rulesFusionesCursos = (data || []).map(item => ({
+                id: item.id_fusion,
+                nombre: item.nombre_fusion,
+                cursosIds: item.cursos_ids || [],
+                promediar: item.promediar
+            }));
+
+            renderizarListadoReglasConfig();
+        } catch (err) {
+            console.error("Error cargando fusiones desde Supabase:", err.message);
+        }
+    }
+
+    /**
+     * Renderiza el listado de reglas activas e integra los disparadores CRUD
+     */
+    function renderizarListadoReglasConfig() {
+        const contenedor = document.getElementById('lista-reglas-fusion-contenedor');
+        if (!contenedor) return;
+
+        if (window.rulesFusionesCursos.length === 0) {
+            contenedor.innerHTML = `
+                <div style="text-align:center; padding:20px; background:#ffffff; border:1px dashed #cbd5e1; border-radius:8px; color:#94a3b8; font-size:0.85rem; font-weight:600;">
+                    No se registran reglas de unificación en el año actual. Todo se procesará por asignaturas independientes.
+                </div>`;
+            return;
+        }
+
+        contenedor.innerHTML = window.rulesFusionesCursos.map(r => `
+            <div class="fusion-rule-item" style="background:#ffffff; border:1px solid #cbd5e1; box-shadow:0 1px 3px rgba(0,0,0,0.02); padding: 12px; display: flex; justify-content: space-between; align-items: center; border-radius: 8px; margin-bottom: 8px;">
+                <div class="rule-info-left">
+                    <h5 style="color:#0f172a; font-weight:700; margin:0; font-size:0.9rem;">${r.nombre}</h5>
+                    <p style="color:#64748b; font-weight:600; margin:2px 0 0 0; font-size:0.78rem;">Estrategia: <span style="color:#0284c7;">${r.promediar ? 'Promediar Competencias' : 'Mantener Separadas'}</span> | Cursos en regla: ${r.cursosIds.length}</p>
+                </div>
+                <div style="display: flex; gap: 6px;">
+                    <button type="button" onclick="editarReglaFusion(${r.id})" style="color:#0284c7; background:#e0f2fe; border:none; border-radius:6px; width:34px; height:34px; display:flex; align-items:center; justify-content:center; cursor:pointer;" title="Editar regla">
+                        <span class="material-symbols-outlined" style="font-size:18px;">edit</span>
+                    </button>
+                    <button type="button" onclick="eliminarReglaFusion(${r.id})" style="color:#ef4444; background:#fee2e2; border:none; border-radius:6px; width:34px; height:34px; display:flex; align-items:center; justify-content:center; cursor:pointer;" title="Eliminar regla">
+                        <span class="material-symbols-outlined" style="font-size:18px;">delete</span>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    /**
+     * NUEVO: Extrae los datos de la regla y monta el estado de edición en el formulario
+     */
+    function editarReglaFusion(idRegla) {
+        const regla = window.rulesFusionesCursos.find(r => r.id === idRegla);
+        if (!regla) return;
+
+        window.idRuleFusionEditando = idRegla;
+
+        // Cargar campos primarios
+        document.getElementById('cfg-fusion-nombre').value = regla.nombre;
+        document.getElementById('cfg-fusion-metodo').value = regla.promediar ? 'promediar' : 'separar';
+
+        // Reconstruir la cola temporal cruzando contra el caché global
+        window.tmpCursosIdsOrdenados = regla.cursosIds.map(cId => {
+            const cursoObj = window.catalogoCursosCache.find(c => c.id_curso == cId);
+            return {
+                id: cId,
+                nombre: cursoObj ? cursoObj.nombre_curso.toUpperCase() : `CURSO ASIGNADO ID: ${cId}`
+            };
+        });
+
+        renderizerCursosTemporalesOrden();
+
+        // Cambiar estilización del botón de acción principal para indicar actualización
+        const btnGuardar = document.querySelector('#entorno-progreso-config button[onclick="guardarReglaFusion()"]');
+        if (btnGuardar) {
+            btnGuardar.innerHTML = `<span class="material-symbols-outlined" style="font-size:18px;">published_with_changes</span> Actualizar Fusión Curricular`;
+            btnGuardar.style.background = '#0284c7';
+            btnGuardar.style.borderColor = '#0284c7';
+        }
+    }
+
+    /**
+     * Procesa de forma inteligente inserciones (Insert) o modificaciones (Update) en Supabase
+     */
+    async function guardarReglaFusion() {
+        const nombre = document.getElementById('cfg-fusion-nombre').value.trim();
+        const metodo = document.getElementById('cfg-fusion-metodo').value;
+
+        if (!nombre || window.tmpCursosIdsOrdenados.length === 0) {
+            return alert("Por favor, estipule un nombre para el área y asocie al menos una asignatura en la cola.");
+        }
+
+        const cursosIds = window.tmpCursosIdsOrdenados.map(c => c.id);
+        const promediar = (metodo === 'promediar');
+
+        try {
+            if (window.idRuleFusionEditando) {
+                // OPERACIÓN A: ACTUALIZAR REGISTRO EXISTENTE (UPDATE)
+                const { error } = await supabaseClient
+                    .from('config_fusiones')
+                    .update({
+                        nombre_fusion: nombre,
+                        cursos_ids: cursosIds,
+                        promediar: promediar
+                    })
+                    .eq('id_fusion', window.idRuleFusionEditando);
+
+                if (error) throw error;
+                alert("Estructura de unificación actualizada exitosamente en el servidor.");
+            } else {
+                // OPERACIÓN B: INSERTAR NUEVO REGISTRO (INSERT)
+                const { error } = await supabaseClient
+                    .from('config_fusiones')
+                    .insert([{
+                        nombre_fusion: nombre,
+                        cursos_ids: cursosIds,
+                        promediar: promediar,
+                        id_anio: window.evalAnioActivo.id_anio
+                    }]);
+
+                if (error) throw error;
+                alert("Estructura de unificación añadida exitosamente al sistema.");
+            }
+
+            // Restablecer entorno y refrescar datos desde la BD
+            resetearFormularioFusion();
+            await cargarFusionesDesdeSupabase();
+            await cargarOrdenGlobalDesdeSupabase();
+
+        } catch (err) {
+            console.error("Error al guardar la fusión en Supabase:", err.message);
+            alert("No se pudo guardar la regla en el servidor: " + err.message);
+        }
+    }
+
+    /**
+     * Elimina de forma definitiva la regla de la base de datos
+     */
+    async function eliminarReglaFusion(idRegla) {
+        if (!confirm("¿Está seguro de que desea eliminar esta regla de unificación? Esto afectará los reportes consolidados.")) return;
+
+        try {
+            const { error } = await supabaseClient
+                .from('config_fusiones')
+                .delete()
+                .eq('id_fusion', idRegla);
+
+            if (error) throw error;
+
+            alert("Regla eliminada del servidor.");
+            if (window.idRuleFusionEditando === idRegla) resetearFormularioFusion();
+            await cargarFusionesDesdeSupabase();
+            await cargarOrdenGlobalDesdeSupabase();
+        } catch (err) {
+            console.error("Error al eliminar fusión de Supabase:", err.message);
+            alert("No se pudo eliminar el registro: " + err.message);
+        }
+    }
+
+    /**
+     * Restablece los campos de control del formulario y limpia estados de edición
+     */
+    function resetearFormularioFusion() {
+        window.idRuleFusionEditando = null;
+        window.tmpCursosIdsOrdenados = [];
+        
+        document.getElementById('cfg-fusion-nombre').value = '';
+        const selectMetodo = document.getElementById('cfg-fusion-metodo');
+        if (selectMetodo) selectMetodo.value = 'promediar';
+
+        renderizerCursosTemporalesOrden();
+
+        const btnGuardar = document.querySelector('#entorno-progreso-config button[onclick="guardarReglaFusion()"]');
+        if (btnGuardar) {
+            btnGuardar.innerHTML = `<span class="material-symbols-outlined" style="font-size:18px;">add_box</span> Registrar Fusión Curricular`;
+            btnGuardar.style.background = '#22c55e';
+            btnGuardar.style.borderColor = '#22c55e';
+        }
+    }
+
+    //==========================================================================================
     /**
      * Añade un elemento a la cola y renderiza sus controles jerárquicos
      */
@@ -4526,75 +4727,7 @@ async function eliminarFeriado(id) {
         window.tmpCursosIdsOrdenados.splice(index, 1);
         renderizerCursosTemporalesOrden();
     }
-
-    /**
-     * Guarda de forma definitiva la regla respetando el arreglo indexado ordenado
-     */
-    function guardarReglaFusion() {
-        const nombre = document.getElementById('cfg-fusion-nombre').value.trim();
-        const metodo = document.getElementById('cfg-fusion-metodo').value;
-
-        if (!nombre || window.tmpCursosIdsOrdenados.length === 0) {
-            return alert("Por favor, estipule un nombre para el área y asocie al menos una asignatura en la cola.");
-        }
-
-        const nuevaRegla = {
-            id: Date.now(),
-            nombre: nombre,
-            cursosIds: window.tmpCursosIdsOrdenados.map(c => c.id), // Almacena el orden exacto configurado
-            promediar: (metodo === 'promediar')
-        };
-
-        window.rulesFusionesCursos.push(nuevaRegla);
-        localStorage.setItem('newton_cfg_fusiones', JSON.stringify(window.rulesFusionesCursos));
-
-        // Limpieza e interfaz en blanco
-        document.getElementById('cfg-fusion-nombre').value = '';
-        window.tmpCursosIdsOrdenados = [];
-        renderizerCursosTemporalesOrden();
-        renderizarListadoReglasConfig();
-        
-        alert("Estructura de unificación añadida exitosamente al sistema.");
-    }
-
-
-    /**
-     * Renderiza el listado de reglas creadas de forma integrada en el panel del tab
-     */
-    function renderizarListadoReglasConfig() {
-        const contenedor = document.getElementById('lista-reglas-fusion-contenedor');
-        if (!contenedor) return;
-
-        if (window.rulesFusionesCursos.length === 0) {
-            contenedor.innerHTML = `
-                <div style="text-align:center; padding:20px; background:#ffffff; border:1px dashed #cbd5e1; border-radius:8px; color:#94a3b8; font-size:0.85rem; font-weight:600;">
-                    No se registran reglas de unificación en el año actual. Todo se procesará por asignaturas independientes.
-                </div>`;
-            return;
-        }
-
-        contenedor.innerHTML = window.rulesFusionesCursos.map(r => `
-            <div class="fusion-rule-item" style="background:#ffffff; border:1px solid #cbd5e1; box-shadow:0 1px 3px rgba(0,0,0,0.02);">
-                <div class="rule-info-left">
-                    <h5 style="color:#0f172a; font-weight:700;">${r.nombre}</h5>
-                    <p style="color:#64748b; font-weight:600;">Estrategia: <span style="color:#0284c7;">${r.promediar ? 'Promediar Competencias' : 'Mantener Separadas'}</span> | Cursos en regla: ${r.cursosIds.length}</p>
-                </div>
-                <button type="button" class="btn-modal-view-close" onclick="eliminarReglaFusion(${r.id})" style="color:#ef4444; background:#fee2e2; border-radius:6px; width:34px; height:34px;" title="Eliminar regla">
-                    <span class="material-symbols-outlined" style="font-size:18px;">delete</span>
-                </button>
-            </div>
-        `).join('');
-    }
-
-    
-    /**
-     * Remueve la regla seleccionada
-     */
-    function eliminarReglaFusion(idRegla) {
-        window.rulesFusionesCursos = window.rulesFusionesCursos.filter(r => r.id !== idRegla);
-        localStorage.setItem('newton_cfg_fusiones', JSON.stringify(window.rulesFusionesCursos));
-        renderizarListadoReglasConfig();
-    }
+ 
 
     function cambiarSubTabProgreso(tabName) {
         document.getElementById('btn-progreso-tab-general').classList.remove('active');
@@ -4681,7 +4814,8 @@ async function eliminarFeriado(id) {
 
     /**
      * MOTOR CORE OPTIMIZADO: Genera el PDF masivo en formato A4 vertical
-     * Con márgenes reducidos, alineación centrada, textos en negrita y color corporativo #29438F.
+     * Ajustes estructurales: Título arriba de todo, insignia a la izquierda con datos de la IE al lado, 
+     * cuadro de estudiante sin línea divisoria horizontal y sello de Dirección por encima de la línea inferior.
      */
     async function generarInformeProgresoSeccionPDF() {
         const idSec = document.getElementById('progreso-sec-seccion').value;
@@ -4696,24 +4830,30 @@ async function eliminarFeriado(id) {
 
         try {
             const anioLectivo = window.evalAnioActivo?.nombre_anio || '2026';
-
-            // ASIGNACIÓN DINÁMICA DE CÓDIGO MODULAR SEGÚN EL NIVEL EDUCATIVO
             const codigoModular = (nivel === 'Primaria') ? '1662360' : '1518554';
 
-            // 1. Descarga cruzada en paralelo de la sección completa
-            const [resMatriculas, resAsignaciones, resPeriodos, resNotas] = await Promise.all([
+            // 1. Descarga en paralelo incluyendo escalas de calificación y la secuencia de ordenamiento del PDF
+            const [resMatriculas, resAsignaciones, resPeriodos, resNotas, resEscalas, resOrdenPDF] = await Promise.all([
                 supabaseClient.from('matriculas').select('id_est, estudiantes(id_est, apellido_paterno, apellido_materno, nombres, dni)').eq('id_sec', idSec).eq('estado', 'ACTIVO'),
                 supabaseClient.from('cursos_asignados').select('id_asignacion, id_curso, cursos!fk_cursos(nombre_curso)').eq('id_sec', idSec).eq('id_anio', window.evalAnioActivo.id_anio),
                 supabaseClient.from('periodos_evaluacion').select('id_periodo, nombre_periodo').eq('id_anio', window.evalAnioActivo.id_anio).order('fecha_inicio', { ascending: true }),
                 supabaseClient.from('calificaciones').select('id_est, id_asignacion, id_periodo, id_competencia, id_escala').in('id_asignacion', 
                     (await supabaseClient.from('cursos_asignados').select('id_asignacion').eq('id_sec', idSec).eq('id_anio', window.evalAnioActivo.id_anio)).data.map(a => a.id_asignacion)
-                )
+                ),
+                window.evalEscalasCalificacion ? Promise.resolve({ data: window.evalEscalasCalificacion }) : supabaseClient.from('escalas_calificacion').select('*'),
+                supabaseClient.from('config_orden_pdf').select('orden_elementos, elementos_ocultos').eq('id_anio', window.evalAnioActivo.id_anio).maybeSingle()
             ]);
 
             if (resMatriculas.error) throw resMatriculas.error;
             if (resAsignaciones.error) throw resAsignaciones.error;
             if (resPeriodos.error) throw resPeriodos.error;
             if (resNotas.error) throw resNotas.error;
+            if (resEscalas.error) throw resEscalas.error;
+            if (resOrdenPDF.error) throw resOrdenPDF.error;
+
+            window.evalEscalasCalificacion = resEscalas.data || [];
+            const dbOrdenPDF = resOrdenPDF.data ? (resOrdenPDF.data.orden_elementos || []) : [];
+            const dbOcultosPDF = resOrdenPDF.data ? (resOrdenPDF.data.elementos_ocultos || []) : [];
 
             const alumnos = (resMatriculas.data || []).map(m => ({
                 id_est: m.id_est || m.estudiantes?.id_est,
@@ -4735,7 +4875,6 @@ async function eliminarFeriado(id) {
 
             if (errC) throw errC;
 
-            // 3. ENSEMBLE HTML: Estructurar la hoja de estilo de impresión ULTRA COMPACTA
             let printWindow = window.open('', '_blank');
             let htmlPrint = `
                 <html>
@@ -4744,35 +4883,37 @@ async function eliminarFeriado(id) {
                     <style>
                         @import url('https://fonts.googleapis.com/css2?family=Anek+Latin:wght@400;500;600;700&display=swap');
                         body { font-family: 'Anek Latin', sans-serif; margin: 0; padding: 0; background: #ffffff; color: #1e293b; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                        
-                        /* CORREGIDO: Disminución drástica de márgenes de la hoja (de 10mm 15mm a 5mm 10mm) */
                         .report-page { width: 210mm; min-height: 296mm; padding: 5mm 10mm; margin: 0 auto; box-sizing: border-box; background: #ffffff; border-bottom: 2px dashed #cbd5e1; position: relative; }
                         @media print { .report-page { border-bottom: none; page-break-after: always; break-after: page; } }
                         
-                        /* CORREGIDO: Ajuste de color a azul #29438F y espaciado mínimo */
-                        .header-pdf { border-bottom: 2px solid #29438F; padding-bottom: 4px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+                        /* CORREGIDO: Estructura de cabecera limpia sin líneas horizontales divisorias */
+                        .ie-header-row { display: flex; gap: 15px; align-items: center; margin-bottom: 12px; width: 100%; }
                         .institution-title h2 { margin: 0; font-size: 1.1rem; color: #29438F; font-weight: 700; text-transform: uppercase; }
                         .institution-title p { margin: 1px 0 0 0; font-size: 0.75rem; color: #64748b; font-weight: 600; }
-                        
-                        /* CORREGIDO: Ajuste de color a azul #29438F y reducción de márgenes */
                         .doc-title { text-align: center; font-size: 0.95rem; font-weight: 700; color: #ffffff; background: #29438F; padding: 6px; border-radius: 6px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
                         
-                        .student-meta-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 6px 15px; margin-bottom: 15px; font-size: 0.8rem; background: #f8fafc; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; }
+                        .student-meta-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 6px 15px; background: #f8fafc; padding: 8px 12px; border-radius: 10px; border: 1px solid #e2e8f0; margin-bottom: 14px; box-sizing: border-box; }
                         .meta-label { color: #64748b; font-weight: 600; text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.5px; }
-                        .meta-value { color: #0f172a; font-weight: 700; margin-top: 1px; }
+                        .meta-value { color: #29438F; font-weight: 700; margin-top: 1px; }
                         
-                        table.table-pdf { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 0.78rem; }
-                        table.table-pdf th { background: #29438F; color: #ffffff; padding: 6px 4px; font-weight: 700; text-align: left; border: 1px solid #29438F; font-size: 0.75rem; text-transform: uppercase; }
+                        .header-insignia { width: 70px; height: 70px; object-fit: contain; mix-blend-mode: multiply; }
                         
-                        /* CORREGIDO: Disminución del espaciado interior superior e inferior de las filas (de 4px a 2px) */
-                        table.table-pdf td { padding: 2px 6px; border: 1px solid #e2e8f0; color: #334155; line-height: 1.25; vertical-align: middle; }
+                        table.table-pdf { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 6px; font-size: 0.78rem; border: 1px solid #29438F; border-radius: 10px; overflow: hidden; }
+                        table.table-pdf th { background: #29438F; color: #ffffff; padding: 6px 4px; font-weight: 700; text-align: center; border: none; font-size: 0.75rem; text-transform: uppercase; border-bottom: 1px solid #29438F; }
+                        table.table-pdf td { padding: 2px 6px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; color: #334155; line-height: 1.25; vertical-align: middle; }
+                        table.table-pdf td:last-child { border-right: none; }
                         
-                        .badge-pdf-nota { display: inline-block; width: 26px; height: 20px; line-height: 20px; text-align: center; font-weight: 800; border-radius: 4px; font-size: 0.75rem; }
-                        .badge-pdf-nota.nota-ad { background: #dcfce7; color: #166534; }
-                        .badge-pdf-nota.nota-a  { background: #dbeafe; color: #1e40af; }
-                        .badge-pdf-nota.nota-b  { background: #fef3c7; color: #92400e; }
-                        .badge-pdf-nota.nota-c  { background: #fee2e2; color: #991b1b; }
-                        .footer-pdf { position: absolute; bottom: 5mm; left: 10mm; right: 10mm; display: flex; justify-content: space-between; border-top: 1px solid #e2e8f0; padding-top: 8px; font-size: 0.7rem; color: #94a3b8; font-weight: 600; }
+                        .badge-pdf-nota { display: inline-block; font-weight: 800; font-size: 0.85rem; color: #0f172a; text-align: center; }
+                        
+                        .legend-container { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 12px; margin-bottom: 10px; font-size: 0.7rem; color: #475569; font-weight: 600; display: flex; gap: 15px; align-items: center; }
+                        .legend-title { color: #29438F; font-weight: 700; text-transform: uppercase; font-size: 0.68rem; }
+                        
+                        /* CORREGIDO: Clases independientes para aislar el Sello y colocarlo POR ENCIMA de la línea */
+                        .seal-floating-wrapper { position: absolute; bottom: 14mm; right: 10mm; display: flex; flex-direction: column; align-items: center; text-align: center; width: 140px; }
+                        .seal-img { width: 110px; height: auto; margin-bottom: -2px; mix-blend-mode: multiply; }
+                        .seal-label { font-size: 0.68rem; color: #475569; font-weight: 700; border-top: 1px solid #cbd5e1; width: 100%; padding-top: 2px; text-transform: uppercase; letter-spacing: 0.3px; }
+                        
+                        .footer-pdf-bar { position: absolute; bottom: 6mm; left: 10mm; right: 10mm; border-top: 1px solid #e2e8f0; padding-top: 6px; display: flex; justify-content: space-between; font-size: 0.7rem; color: #94a3b8; font-weight: 600; }
                     </style>
                 </head>
                 <body>
@@ -4787,27 +4928,27 @@ async function eliminarFeriado(id) {
 
                 htmlPrint += `
                     <div class="report-page">
-                        <!-- Cabecera Institucional -->
-                        <div class="header-pdf">
-                            <div class="institution-title">
-                                <h2>I.E.P. Ciencias Aplicadas Sir Isaac Newton</h2>
-                                <p>Mollendo • Provincia de Islay • Región Arequipa</p>
-                            </div>
-                            <div style="text-align: right; font-size: 0.75rem; color: #475569; font-weight: 700; line-height: 1.3;">
-                                Código Modular: ${codigoModular}<br>Año Lectivo: ${anioLectivo}
-                            </div>
-                        </div>
-
-                        <!-- Título del Documento Optimizado -->
                         <div class="doc-title">
                             Informe de Progreso del Aprendizaje del Estudiante ${anioLectivo}
                         </div>
 
-                        <!-- Ficha de Datos del Alumno -->
+                        <div class="ie-header-row">
+                            <img src="https://i.postimg.cc/Z5zvmYcM/logo-Newton-ticket-PDF.jpg" class="header-insignia" alt="Insignia Corp">
+                            <div style="flex: 1; display: flex; justify-content: space-between; align-items: center;">
+                                <div class="institution-title">
+                                    <h2>I.E.P. Ciencias Aplicadas Sir Isaac Newton</h2>
+                                    <p>Mollendo • Islay • Arequipa</p>
+                                </div>
+                                <div style="text-align: right; font-size: 0.75rem; color: #475569; font-weight: 700; line-height: 1.3;">
+                                    Código Modular: ${codigoModular}<br>Año Lectivo: ${anioLectivo}
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="student-meta-grid">
                             <div>
                                 <div class="meta-label">Estudiante</div>
-                                <div class="meta-value" style="font-size: 0.9rem; color: #29438F;">${alumno.nombre_completo}</div>
+                                <div class="meta-value" style="font-size: 0.95rem;">${alumno.nombre_completo}</div>
                             </div>
                             <div>
                                 <div class="meta-label">DNI / Código</div>
@@ -4815,7 +4956,7 @@ async function eliminarFeriado(id) {
                             </div>
                             <div>
                                 <div class="meta-label">Grado y Sección</div>
-                                <div class="meta-value">${grado} ── Sección "${document.getElementById('progreso-sec-seccion').options[document.getElementById('progreso-sec-seccion').selectedIndex].text.replace('Sección ', '').replace(/"/g, '')}"</div>
+                                <div class="meta-value">${grado} "${document.getElementById('progreso-sec-seccion').options[document.getElementById('progreso-sec-seccion').selectedIndex].text.replace('Sección ', '').replace(/"/g, '')}"</div>
                             </div>
                             <div>
                                 <div class="meta-label">Nivel Educativo</div>
@@ -4823,17 +4964,14 @@ async function eliminarFeriado(id) {
                             </div>
                         </div>
 
-                        <!-- Tabla de Notas con Sombreado #29438F -->
                         <table class="table-pdf">
                             <thead>
                                 <tr>
-                                    <!-- CORREGIDO: Centrado del encabezado ÁREA -->
-                                    <th style="width: 130px; background: #29438F; border-color: #29438F; text-align: center;">ÁREA</th>
-                                    <!-- CORREGIDO: Centrado del encabezado COMPETENCIAS OFICIALES DEL CNEB -->
-                                    <th style="background: #29438F; border-color: #29438F; text-align: center;">Competencias Oficiales del CNEB</th>`;
+                                    <th style="width: 130px; background: #29438F; text-align: center;">ÁREA</th>
+                                    <th style="background: #29438F; text-align: center;">Competencias Oficiales del CNEB</th>`;
                 
                 periodos.forEach(p => {
-                    htmlPrint += `<th style="text-align:center; width: 42px; background: #29438F; border-color: #29438F;">${p.nombre_periodo.replace('Bimestre', 'Bim')}</th>`;
+                    htmlPrint += `<th style="text-align:center; width: 30px; background: #29438F;">${p.nombre_periodo.replace('Bimestre', 'Bim')}</th>`;
                 });
 
                 htmlPrint += `
@@ -4841,135 +4979,165 @@ async function eliminarFeriado(id) {
                             </thead>
                             <tbody>`;
 
-                // --- SUB-PROCESO 1: ÁREAS FUSIONADAS CONFIGURADAS ---
+                let fusionesDisponibles = [];
                 window.rulesFusionesCursos.forEach(regla => {
-                    let asignacionesArea = [];
-                    regla.cursosIds.forEach(cId => {
-                        const found = asignaciones.find(a => Number(a.id_curso) == cId);
-                        if (found) asignacionesArea.push(found);
-                    });
+                    const tieneAsig = asignaciones.some(a => regla.cursosIds.includes(Number(a.id_curso)));
+                    if (tieneAsig) fusionesDisponibles.push({ tipo: 'FUSION', id: regla.id, raw: regla });
+                });
 
-                    if (asignacionesArea.length === 0) return;
-
-                    let competenciasArea = [];
-                    asignacionesArea.forEach(asig => {
-                        const comps = competencias.filter(c => c.id_curso == asig.id_curso);
-                        competenciasArea.push({ id_asignacion: asig.id_asignacion, id_curso: asig.id_curso, listaComps: comps });
-                    });
-
-                    if (regla.promediar) {
-                        const maxCompetencias = Math.max(...competenciasArea.map(c => c.listaComps.length), 0);
-                        const idPrimerCurso = regla.cursosIds[0];
-                        const compsPrimerCurso = competencias.filter(c => c.id_curso == idPrimerCurso);
-
-                        for (let i = 0; i < maxCompetencias; i++) {
-                            htmlPrint += `<tr>`;
-                            // CORREGIDO: Negrita explícita en los nombres de áreas unificadas (font-weight: 700 y <strong>)
-                            if (i === 0) htmlPrint += `<td rowspan="${maxCompetencias}" style="font-weight: 700; background:#f8fafc; vertical-align:middle; border-right:2px solid #cbd5e1;"><strong>${regla.nombre}</strong></td>`;
-                            
-                            let descripcionMostrar = "";
-                            if (compsPrimerCurso[i]) {
-                                descripcionMostrar = compsPrimerCurso[i].descripcion_competencia;
-                            } else {
-                                for (let cArea of competenciasArea) {
-                                    if (cArea.listaComps[i]) {
-                                        descripcionMostrar = cArea.listaComps[i].descripcion_competencia;
-                                        break;
-                                    }
-                                }
-                                if (!descripcionMostrar) descripcionMostrar = `Competencia de Área N° ${i + 1}`;
-                            }
-
-                            htmlPrint += `<td style="font-weight:500; color:#475569;">${descripcionMostrar}</td>`;
-
-                            periodos.forEach(p => {
-                                let sumaDecimales = 0, contador = 0;
-                                competenciasArea.forEach(cArea => {
-                                    const compEspecifica = cArea.listaComps[i];
-                                    if (compEspecifica) {
-                                        const nota = shortcutBuscarNota(notasAlumno, cArea.id_asignacion, p.id_periodo, compEspecifica.id_competencia);
-                                        if (nota) {
-                                            const escalaObj = window.evalEscalasCalificacion.find(e => e.id_escala == nota);
-                                            if (escalaObj) { sumaDecimales += Number(escalaObj.valor_decimal); contador++; }
-                                        }
-                                    }
-                                });
-
-                                htmlPrint += `<td style="text-align:center;">`;
-                                if (contador > 0) {
-                                    const lit = calcularEscalaPorPromedioDecimal(sumaDecimales / contador);
-                                    htmlPrint += `<span class="badge-pdf-nota nota-${lit.toLowerCase()}">${lit}</span>`;
-                                } else { htmlPrint += '─'; }
-                                htmlPrint += `</td>`;
-                            });
-                            htmlPrint += `</tr>`;
-                        }
-                    } else {
-                        const totalComps = competenciasArea.reduce((acc, curr) => acc + curr.listaComps.length, 0);
-                        let contadorGlobal = 0;
-                        
-                        competenciasArea.forEach(cArea => {
-                            cArea.listaComps.forEach(comp => {
-                                htmlPrint += `<tr>`;
-                                // CORREGIDO: Negrita explícita en los nombres de áreas secuenciales unificadas (font-weight: 700 y <strong>)
-                                if (contadorGlobal === 0) htmlPrint += `<td rowspan="${totalComps}" style="font-weight: 700; background:#f8fafc; vertical-align:middle; border-right:2px solid #cbd5e1;"><strong>${regla.nombre}</strong></td>`;
-                                
-                                htmlPrint += `<td style="color:#475569;">${comp.descripcion_competencia}</td>`;
-                                
-                                periodos.forEach(p => {
-                                    const nota = shortcutBuscarNota(notasAlumno, cArea.id_asignacion, p.id_periodo, comp.id_competencia);
-                                    htmlPrint += `<td style="text-align:center;">${nota ? `<span class="badge-pdf-nota nota-${nota.toLowerCase()}">${nota}</span>` : '─'}</td>`;
-                                });
-                                contadorGlobal++;
-                                htmlPrint += `</tr>`;
-                            });
-                        });
+                let cursosLibresDisponibles = [];
+                asignaciones.forEach(asig => {
+                    if (!cursosEnFusiones.includes(Number(asig.id_curso))) {
+                        cursosLibresDisponibles.push({ tipo: 'CURSO', id: asig.id_curso, raw: asig });
                     }
                 });
 
-                // --- SUB-PROCESO 2: CURSOS LIBRES (SIN FUSIÓN) ---
-                asignaciones.forEach(asig => {
-                    if (cursosEnFusiones.includes(Number(asig.id_curso))) return;
+                let itemsPlanificadosReporte = [];
+                dbOrdenPDF.forEach(key => {
+                    const [tipo, idStr] = key.split(':');
+                    if (tipo === 'FUSION') {
+                        const idx = fusionesDisponibles.findIndex(f => f.id == idStr);
+                        if (idx !== -1) { itemsPlanificadosReporte.push(fusionesDisponibles[idx]); fusionesDisponibles.splice(idx, 1); }
+                    } else if (tipo === 'CURSO') {
+                        const idx = cursosLibresDisponibles.findIndex(c => c.id == idStr);
+                        if (idx !== -1) { itemsPlanificadosReporte.push(cursosLibresDisponibles[idx]); cursosLibresDisponibles.splice(idx, 1); }
+                    }
+                });
+                
+                let ordenFinalReporte = itemsPlanificadosReporte.concat(fusionesDisponibles).concat(cursosLibresDisponibles);
 
-                    const nombreCurso = asig.cursos?.nombre_curso || 'Curso';
-                    const compsDelCurso = competencias.filter(c => c.id_curso == asig.id_curso);
+                ordenFinalReporte.forEach(item => {
+                    const llaveVisibilidad = `${item.tipo}:${item.id}`;
+                    if (dbOcultosPDF.includes(llaveVisibilidad)) return;
 
-                    compsDelCurso.forEach((comp, idx) => {
-                        htmlPrint += `<tr>`;
-                        // CORREGIDO: Efecto de negrita aplicado a los nombres de los cursos libres mediante font-weight: 700 y <strong>
-                        if (idx === 0) htmlPrint += `<td rowspan="${compsDelCurso.length}" style="font-weight: 700; color:#334155; background:#fafafa; vertical-align:middle;"><strong>${nombreCurso}</strong></td>`;
-                        
-                        htmlPrint += `<td style="color:#475569;">${comp.descripcion_competencia}</td>`;
-
-                        periodos.forEach(p => {
-                            const nota = shortcutBuscarNota(notasAlumno, asig.id_asignacion, p.id_periodo, comp.id_competencia);
-                            htmlPrint += `<td style="text-align:center;">${nota ? `<span class="badge-pdf-nota nota-${nota.toLowerCase()}">${nota}</span>` : '─'}</td>`;
+                    if (item.tipo === 'FUSION') {
+                        const regla = item.raw;
+                        let asignacionesArea = [];
+                        regla.cursosIds.forEach(cId => {
+                            const found = asignaciones.find(a => Number(a.id_curso) == cId);
+                            if (found) asignacionesArea.push(found);
                         });
-                        htmlPrint += `</tr>`;
-                    });
+                        if (asignacionesArea.length === 0) return;
+
+                        let competenciasArea = [];
+                        asignacionesArea.forEach(asig => {
+                            const comps = competencias.filter(c => c.id_curso == asig.id_curso);
+                            competenciasArea.push({ id_asignacion: asig.id_asignacion, id_curso: asig.id_curso, listaComps: comps });
+                        });
+
+                        if (regla.promediar) {
+                            const maxCompetencias = Math.max(...competenciasArea.map(c => c.listaComps.length), 0);
+                            const idPrimerCurso = regla.cursosIds[0];
+                            const compsPrimerCurso = competencias.filter(c => c.id_curso == idPrimerCurso);
+
+                            for (let i = 0; i < maxCompetencias; i++) {
+                                const isLastRow = (i === maxCompetencias - 1);
+                                const thickBorderStyle = isLastRow ? 'border-bottom: 2px solid #94a3b8 !important;' : '';
+
+                                htmlPrint += `<tr>`;
+                                if (i === 0) htmlPrint += `<td rowspan="${maxCompetencias}" style="font-weight: 700; background:#f8fafc; vertical-align:middle; border-right:2px solid #cbd5e1; border-bottom: 2px solid #94a3b8 !important;"><strong>${regla.nombre}</strong></td>`;
+                                
+                                let descripcionMostrar = "";
+                                if (compsPrimerCurso[i]) {
+                                    descripcionMostrar = compsPrimerCurso[i].descripcion_competencia;
+                                } else {
+                                    for (let cArea of competenciasArea) {
+                                        if (cArea.listaComps[i]) { descripcionMostrar = cArea.listaComps[i].descripcion_competencia; break; }
+                                    }
+                                    if (!descripcionMostrar) descripcionMostrar = `Competencia de Área N° ${i + 1}`;
+                                }
+                                htmlPrint += `<td style="color:#000000; ${thickBorderStyle}">${descripcionMostrar}</td>`;
+
+                                periodos.forEach(p => {
+                                    let sumaDecimales = 0, contador = 0;
+                                    competenciasArea.forEach(cArea => {
+                                        const compEspecifica = cArea.listaComps[i];
+                                        if (compEspecifica) {
+                                            const nota = shortcutBuscarNota(notasAlumno, cArea.id_asignacion, p.id_periodo, compEspecifica.id_competencia);
+                                            if (nota) {
+                                                const escalaObj = window.evalEscalasCalificacion.find(e => e.id_escala == nota);
+                                                if (escalaObj) { sumaDecimales += Number(escalaObj.valor_decimal); contador++; }
+                                            }
+                                        }
+                                    });
+                                    htmlPrint += `<td style="text-align:center; ${thickBorderStyle}">`;
+                                    if (contador > 0) {
+                                        const lit = calcularEscalaPorPromedioDecimal(sumaDecimales / contador);
+                                        htmlPrint += `<span class="badge-pdf-nota">${lit}</span>`;
+                                    } else { htmlPrint += '─'; }
+                                    htmlPrint += `</td>`;
+                                });
+                                htmlPrint += `</tr>`;
+                            }
+                        } else {
+                            const totalComps = competenciasArea.reduce((acc, curr) => acc + curr.listaComps.length, 0);
+                            let contadorGlobal = 0;
+                            competenciasArea.forEach(cArea => {
+                                cArea.listaComps.forEach(comp => {
+                                    const isLastRow = (contadorGlobal === totalComps - 1);
+                                    const thickBorderStyle = isLastRow ? 'border-bottom: 2px solid #94a3b8 !important;' : '';
+
+                                    htmlPrint += `<tr>`;
+                                    if (contadorGlobal === 0) htmlPrint += `<td rowspan="${totalComps}" style="font-weight: 700; background:#f8fafc; vertical-align:middle; border-right:2px solid #cbd5e1; border-bottom: 2px solid #94a3b8 !important;"><strong>${regla.nombre}</strong></td>`;
+                                    htmlPrint += `<td style="color:#000000; ${thickBorderStyle}">${comp.descripcion_competencia}</td>`;
+                                    periodos.forEach(p => {
+                                        const nota = shortcutBuscarNota(notasAlumno, cArea.id_asignacion, p.id_periodo, comp.id_competencia);
+                                        htmlPrint += `<td style="text-align:center; ${thickBorderStyle}">${nota ? `<span class="badge-pdf-nota">${nota}</span>` : '─'}</td>`;
+                                    });
+                                    contadorGlobal++; htmlPrint += `</tr>`;
+                                });
+                            });
+                        }
+                    } else if (item.tipo === 'CURSO') {
+                        const asig = item.raw;
+                        const nombreCurso = asig.cursos?.nombre_curso || 'Curso';
+                        const compsDelCurso = competencias.filter(c => c.id_curso == asig.id_curso);
+
+                        compsDelCurso.forEach((comp, idx) => {
+                            const isLastRow = (idx === compsDelCurso.length - 1);
+                            const thickBorderStyle = isLastRow ? 'border-bottom: 2px solid #94a3b8 !important;' : '';
+
+                            htmlPrint += `<tr>`;
+                            if (idx === 0) htmlPrint += `<td rowspan="${compsDelCurso.length}" style="font-weight: 700; color:#334155; background:#fafafa; vertical-align:middle; border-bottom: 2px solid #94a3b8 !important;"><strong>${nombreCurso}</strong></td>`;
+                            htmlPrint += `<td style="color:#000000; ${thickBorderStyle}">${comp.descripcion_competencia}</td>`;
+                            periodos.forEach(p => {
+                                const nota = shortcutBuscarNota(notasAlumno, asig.id_asignacion, p.id_periodo, comp.id_competencia);
+                                htmlPrint += `<td style="text-align:center; ${thickBorderStyle}">${nota ? `<span class="badge-pdf-nota">${nota}</span>` : '─'}</td>`;
+                            });
+                            htmlPrint += `</tr>`;
+                        });
+                    }
                 });
 
                 htmlPrint += `
                             </tbody>
                         </table>
 
-                        <!-- Pie de página de la Boleta del Alumno -->
-                        <div class="footer-pdf">
+                        <div class="legend-container">
+                            <span class="legend-title">Escala de Calificación:</span>
+                            <span><strong>AD</strong>: Logro Destacado</span>
+                            <span><strong>A</strong>: Logro Previsto</span>
+                            <span><strong>B</strong>: En Proceso</span>
+                            <span><strong>C</strong>: En Inicio</span>
+                        </div>
+
+                        <div class="seal-floating-wrapper">
+                            <img src="https://i.postimg.cc/nz5Tbf91/firma-y-sello-direccion.jpg" class="seal-img" alt="Sello Dirección">
+                            
+                        </div>
+
+                        <div class="footer-pdf-bar">
                             <span>Newton Académico • Sistema Integrado de Gestión Escolar</span>
-                            <span>Firma del Director / Sello Institucional</span>
                         </div>
                     </div>
                 `;
             });
 
             htmlPrint += `</body></html>`;
-
             printWindow.document.write(htmlPrint);
             printWindow.document.close();
 
-            printWindow.setTimeout(() => {
-                printWindow.print();
-            }, 600);
+            printWindow.setTimeout(() => { printWindow.print(); }, 600);
 
         } catch (err) {
             console.error("Fallo general emitiendo PDF masivo:", err);
@@ -4977,10 +5145,194 @@ async function eliminarFeriado(id) {
         }
     }
 
-    /**
-     * Función utilitaria interna para acelerar la búsqueda binaria de calificaciones en el loop
-     */
     function shortcutBuscarNota(coleccionNotas, idAsignacion, idPeriodo, idCompetencia) {
+        if (!Array.isArray(coleccionNotas)) return null;
         const r = coleccionNotas.find(n => n.id_asignacion == idAsignacion && n.id_periodo == idPeriodo && n.id_competencia == idCompetencia);
         return r ? r.id_escala : null;
     }
+
+
+    //==============================================================================
+    //variables globales y funciones de sincronización
+    // para controlar la mezcla ordenada en la memoria activa del navegador
+    window.ordenGlobalElementosPDF = []; // Cache dinámico de mezcla ordenada
+
+    /**
+     * Modificación en el inicializador del Tab para orquestar la carga del orden global
+     */
+    async function inicializarTabConfigFusiones() {
+        const selectCursos = document.getElementById('cfg-fusion-cursos-select');
+        if (!selectCursos) return;
+
+        selectCursos.innerHTML = '<option value="">Sincronizando catálogo completo de cursos...</option>';
+        resetearFormularioFusion();
+
+        try {
+            if (!window.evalAnioActivo) {
+                const { data: anioReg, error: errA } = await supabaseClient.from('anio_academico').select('*').eq('estado', 'ACTIVO').single();
+                if (errA) throw errA;
+                window.evalAnioActivo = anioReg;
+            }
+
+            const { data: catalogoCursos, error: errC } = await supabaseClient
+                .from('cursos')
+                .select('id_curso, nombre_curso')
+                .order('nombre_curso', { ascending: true });
+
+            if (errC) throw errC;
+            window.catalogoCursosCache = catalogoCursos || [];
+
+            let optionsHtml = '<option value="">Elija un curso de la lista...</option>';
+            window.catalogoCursosCache.forEach(c => {
+                optionsHtml += `<option value="${c.id_curso}">${c.nombre_curso.toUpperCase()}</option>`;
+            });
+            selectCursos.innerHTML = optionsHtml;
+
+            // Cargar fusiones y posteriormente enlazar el orden unificado
+            await cargarFusionesDesdeSupabase();
+            await cargarOrdenGlobalDesdeSupabase();
+
+        } catch (err) {
+            console.error("Error al poblar catálogo global de fusiones:", err.message);
+            selectCursos.innerHTML = '<option value="">Error al sincronizar cursos.</option>';
+        }
+    }
+
+    /**
+     * CORREGIDO: Trae el orden y la visibilidad desde Supabase y procesa el estado 'oculto'
+     */
+    async function cargarOrdenGlobalDesdeSupabase() {
+        try {
+            const { data: dbOrden, error } = await supabaseClient
+                .from('config_orden_pdf')
+                .select('orden_elementos, elementos_ocultos')
+                .eq('id_anio', window.evalAnioActivo.id_anio)
+                .maybeSingle();
+
+            if (error) throw error;
+            let listaGuardada = dbOrden ? (dbOrden.orden_elementos || []) : [];
+            let listaOcultos = dbOrden ? (dbOrden.elementos_ocultos || []) : [];
+
+            let cursosEnFusiones = [];
+            window.rulesFusionesCursos.forEach(r => { cursosEnFusiones = cursosEnFusiones.concat(r.cursosIds); });
+
+            let elementosDisponibles = [];
+
+            // 1. Inyectar fusiones evaluando si están ocultas
+            window.rulesFusionesCursos.forEach(r => {
+                const key = `FUSION:${r.id}`;
+                elementosDisponibles.push({ 
+                    tipo: 'FUSION', 
+                    id: r.id, 
+                    nombre: r.nombre.toUpperCase(),
+                    oculto: listaOcultos.includes(key)
+                });
+            });
+
+            // 2. Inyectar cursos libres evaluando si están ocultos
+            window.catalogoCursosCache.forEach(c => {
+                if (!cursosEnFusiones.includes(Number(c.id_curso))) {
+                    const key = `CURSO:${c.id_curso}`;
+                    elementosDisponibles.push({ 
+                        tipo: 'CURSO', 
+                        id: c.id_curso, 
+                        nombre: c.nombre_curso.toUpperCase(),
+                        oculto: listaOcultos.includes(key)
+                    });
+                }
+            });
+
+            // 3. Reordenar el lote basándose en la secuencia oficial
+            let elementosOrdenados = [];
+            listaGuardada.forEach(key => {
+                const [tipo, idStr] = key.split(':');
+                const index = elementosDisponibles.findIndex(e => e.tipo === tipo && e.id == idStr);
+                if (index !== -1) {
+                    elementosOrdenados.push(elementosDisponibles[index]);
+                    elementosDisponibles.splice(index, 1);
+                }
+            });
+
+            window.ordenGlobalElementosPDF = elementosOrdenados.concat(elementosDisponibles);
+            renderizarPanelOrdenGlobal();
+
+        } catch (err) {
+            console.error("Error estructurando el orden analítico del PDF:", err.message);
+        }
+    }
+
+    /**
+     * CORREGIDO: Renderiza las filas incluyendo el botón de mostrar/ocultar y feedback visual
+     */
+    function renderizarPanelOrdenGlobal() {
+        const contenedor = document.getElementById('panel-orden-global-contenedor');
+        if (!contenedor) return;
+
+        if (window.ordenGlobalElementosPDF.length === 0) {
+            contenedor.innerHTML = '<p style="font-size:0.8rem; color:#64748b; font-style:italic; text-align:center;">No existen registros para ordenar en el año vigente.</p>';
+            return;
+        }
+
+        contenedor.innerHTML = window.ordenGlobalElementosPDF.map((item, idx) => `
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#ffffff; padding:6px 12px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.82rem; font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,0.01); ${item.oculto ? 'opacity: 0.6; background: #f8fafc;' : ''}">
+                <span style="color:#0f172a; ${item.oculto ? 'text-decoration: line-through; color: #94a3b8;' : ''}">
+                    <span style="background:${item.tipo === 'FUSION' ? '#e0f2fe' : '#f1f5f9'}; color:${item.tipo === 'FUSION' ? '#0369a1' : '#475569'}; padding:2px 6px; border-radius:4px; font-size:0.68rem; margin-right:8px; font-weight:700;">${item.tipo}</span>
+                    <strong>Posición ${idx + 1}:</strong> ${item.nombre}
+                </span>
+                <div style="display:flex; gap:4px; align-items:center;">
+                    <button type="button" onclick="toggleVisibilidadElemento(${idx})" style="padding:4px; cursor:pointer; background:${item.oculto ? '#fee2e2' : '#f1f5f9'}; border:1px solid ${item.oculto ? '#fca5a5' : '#cbd5e1'}; color:${item.oculto ? '#ef4444' : '#475569'}; border-radius:4px; display:flex; align-items:center; justify-content:center;" title="${item.oculto ? 'Mostrar en PDF' : 'Ocultar en PDF'}">
+                        <span class="material-symbols-outlined" style="font-size:16px;">${item.oculto ? 'visibility_off' : 'visibility'}</span>
+                    </button>
+                    <button type="button" onclick="moverElementoOrdenGlobal(${idx}, -1)" style="padding:2px 6px; cursor:pointer; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:4px; font-weight:700;" ${idx === 0 ? 'disabled style="opacity:0.4; cursor:default;"' : ''}>↑</button>
+                    <button type="button" onclick="moverElementoOrdenGlobal(${idx}, 1)" style="padding:2px 6px; cursor:pointer; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:4px; font-weight:700;" ${idx === window.ordenGlobalElementosPDF.length - 1 ? 'disabled style="opacity:0.4; cursor:default;"' : ''}>↓</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    /**
+     * NUEVO: Conmuta el estado de visibilidad del elemento seleccionado
+     */
+    function toggleVisibilidadElemento(index) {
+        window.ordenGlobalElementosPDF[index].oculto = !window.ordenGlobalElementosPDF[index].oculto;
+        renderizarPanelOrdenGlobal();
+    }
+
+    /**
+     * CORREGIDO: Almacena de forma unificada el orden secuencial y los elementos excluidos
+     */
+    async function guardarOrdenGlobalPDF() {
+        const stringsOrden = window.ordenGlobalElementosPDF.map(e => `${e.tipo}:${e.id}`);
+        const stringsOcultos = window.ordenGlobalElementosPDF.filter(e => e.oculto).map(e => `${e.tipo}:${e.id}`);
+        
+        try {
+            const { error } = await supabaseClient
+                .from('config_orden_pdf')
+                .upsert({
+                    id_anio: window.evalAnioActivo.id_anio,
+                    orden_elementos: stringsOrden,
+                    elementos_ocultos: stringsOcultos
+                }, { onConflict: 'id_anio' });
+
+            if (error) throw error;
+            alert("El orden y los criterios de visibilidad del PDF se han guardado exitosamente.");
+        } catch (err) {
+            console.error("Fallo guardando orden en Supabase:", err.message);
+            alert("Error transaccional al salvar el ordenamiento: " + err.message);
+        }
+    }
+
+    
+
+    function moverElementoOrdenGlobal(index, direccion) {
+        const nuevoIndex = index + direccion;
+        if (nuevoIndex < 0 || nuevoIndex >= window.ordenGlobalElementosPDF.length) return;
+        
+        const temp = window.ordenGlobalElementosPDF[index];
+        window.ordenGlobalElementosPDF[index] = window.ordenGlobalElementosPDF[nuevoIndex];
+        window.ordenGlobalElementosPDF[nuevoIndex] = temp;
+        
+        renderizarPanelOrdenGlobal();
+    }
+
+    
