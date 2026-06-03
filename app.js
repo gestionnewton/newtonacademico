@@ -5116,7 +5116,7 @@ async function eliminarFeriado(id) {
                         <div class="legend-container">
                             <span class="legend-title">Escala de Calificación:</span>
                             <span><strong>AD</strong>: Logro Destacado</span>
-                            <span><strong>A</strong>: Logro Previsto</span>
+                            <span><strong>A</strong>: Logro Esperado</span>
                             <span><strong>B</strong>: En Proceso</span>
                             <span><strong>C</strong>: En Inicio</span>
                         </div>
